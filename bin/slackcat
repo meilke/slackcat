@@ -22,6 +22,10 @@ class Slackcat
     @channels ||= get_objects('channels.list', 'channels')
   end
 
+  def channel_by(name)
+    channels().find { |channel| channel['name'] == name }
+  end
+
   def groups
     @groups ||= get_objects('groups.list', 'groups')
   end
@@ -114,16 +118,16 @@ if opts.values_at(:channels, :groups, :users).all?(&:empty?)
 end
 
 ## translate destination names into slack ids
-channels = opts[:channels].split(/[\s,]+/).map do |name|
-  channel = slack.channels.find { |channel| channel['name'] == name }
-  if channel
-    channel.fetch('id')
-  else
-    puts "skipping channel #{name}: not available (maybe use -g for group?)"
-    nil
-  end
+individual_channel_names = opts[:channels].split(/[\s,]+/)
+existing_channel_names = individual_channel_names.select {|name| slack.channel_by(name)}
+
+(individual_channel_names - existing_channel_names).each do |name|
+  puts "skipping channel #{name}: not available (maybe use -g for group?)"
 end
-channels = channels.compact
+
+channels = existing_channel_names.map do |name|
+  slack.channel_by(name).fetch('id')
+end
 
 groups = opts[:groups].split(/[\s,]+/).map do |name|
   slack.groups.find { |group| group['name'] == name }.fetch('id')
