@@ -115,7 +115,9 @@ end
 
 ## translate destination names into slack ids
 channels = opts[:channels].split(/[\s,]+/).map do |name|
-  slack.channels.find { |channel| channel['name'] == name }.fetch('id')
+  channel = slack.channels.find { |channel| channel['name'] == name }
+  puts "skipping channel #{name}: not available (maybe use -g for group?)" unless channel
+  channel.fetch('id') if channel
 end
 
 groups = opts[:groups].split(/[\s,]+/).map do |name|
